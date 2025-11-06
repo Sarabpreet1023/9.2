@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]     # Trigger on every push to main
+  pull_request:
+    branches: [ "main" ]     # Optional: run on PRs too
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Run tests
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      # Build the React app
+      - name: Build the app
+        run: npm run build
+
+      # Upload build artifacts (for debugging or later use)
+      - name: Upload build folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/
+
+  # Optional: Deployment Job
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/
+
+      # 🚀 Example Deployment to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
